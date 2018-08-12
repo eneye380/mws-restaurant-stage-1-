@@ -1,0 +1,23 @@
+.inside #maincontent{
+    display: flex;
+    flex-wrap: wrap;
+    background: black;
+}
+.inside #map-container{
+    width: 100%;
+}
+ .inside #restaurant-container, .inside #reviews-container {
+ width: 100%;
+}
+#restaurants-list li{
+    margin: 0;
+    padding: 0;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+
+#restaurants-list li a{
+    overflow: hidden;
+}

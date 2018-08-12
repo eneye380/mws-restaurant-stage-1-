@@ -1,0 +1,11 @@
+#restaurants-list li{
+    margin: 0;
+    margin-right: 15px;
+    margin-bottom: 15px;
+    width: calc((100% - 15px)/2);
+    
+}
+
+#restaurants-list li:nth-child(2n){
+    margin-right: 0;
+}
