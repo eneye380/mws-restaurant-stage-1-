@@ -285,3 +285,7 @@ nav h1 a {
 #restaurant-hours td {
   color: #666;
 }
+
+#map:focus{
+  border-color: yellowgreen;
+}
