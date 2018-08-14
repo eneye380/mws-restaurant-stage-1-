@@ -1,15 +1,24 @@
-var CACHE_VERSION = 'app-v2';
+/**
+ * Source: https://www.sitepoint.com/getting-started-with-service-workers/
+ * ,https://developers.google.com/web/ilt/pwa/caching-files-with-service-worker
+ */
+var CACHE_VERSION = 'app-v1';
 var CACHE_FILES = [
     '/',
+    'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js',
+    'js/dbhelper.js',
     'js/main.js',
+    'js/restaurant_info.js',
+    'https://unpkg.com/leaflet@1.3.1/dist/leaflet.css',
     'css/styles-xx-large.css',
     'css/styles-large.css',
     'css/styles-medium.css',
     'css/styles-small.css',
     'css/styles.css',
+    'data/restaurants.json',
     'index.html',
-    'restaurant.html'
-];
+    'restaurant.html',
+    ];
 
 self.addEventListener('install', function (event) {
     event.waitUntil(
@@ -23,14 +32,25 @@ self.addEventListener('install', function (event) {
 
 self.addEventListener('fetch', function (event) {
     console.log("URL: " + event.request.url);
-    event.respondWith(
-        caches.match(event.request).then(function (res) {
-            if (res) {
-                return res;
+    /*if (event.request.url.indexOf('https://api.tiles.mapbox.com/v4/') == 0) {
+        event.respondWith(
+            // Handle Maps API requests in a generic fashion,
+            // by returning a Promise that resolves to a Response.
+            function () {
+                console.log("newURL: " + event.request.url);
+                return fetch(event.request.url);
             }
-            requestBackend(event);
-        })
-    )
+        );
+    } else {*/
+        event.respondWith(
+            caches.match(event.request).then(function (res) {
+                if (res) {
+                    return res;
+                }
+                requestBackend(event);
+            })
+        )
+/*}*/
 });
 
 function requestBackend(event) {
@@ -42,7 +62,7 @@ function requestBackend(event) {
         }
 
         var response = res.clone();
-
+        //Add to cache
         caches.open(CACHE_VERSION).then(function (cache) {
             cache.put(event.request, response);
         });

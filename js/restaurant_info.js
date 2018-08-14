@@ -195,5 +195,9 @@ getParameterByName = (name, url) => {
   return decodeURIComponent(results[2].replace(/\+/g, ' '));
 }
 
-var anchor = $("<a>").attr("href", image_link).attr("tabindex", tabindex);
-var img = $("<img>").attr("src", image_src).appendTo(anchor);
+// start service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker
+    .register('./service-worker.js')
+    .then(function () { console.log('Service Worker Registered'); });
+}
