@@ -1,14 +1,6 @@
-.inside #maincontent{
-    display: flex;
-    flex-wrap: wrap;
-    background: black;
-}
-.inside #map-container{
-    width: 100%;
-}
- .inside #restaurant-container, .inside #reviews-container {
- width: 100%;
-}
+/**
+index.html
+*/
 #restaurants-list li{
     margin: 0;
     padding: 0;
@@ -16,8 +8,37 @@
     margin-bottom: 15px;
     text-align: center;
 }
-
-
 #restaurants-list li a{
     overflow: hidden;
+}
+/**
+restaurant.html
+*/
+.inside #map-container{
+    width: 50%;
+}
+.inside #restaurant-container, .inside #reviews-container {
+    width: 50%;
+}
+.inside #restaurant-img, .inside #restaurant-cuisine {
+	width: 100%;
+}
+.inside #footer{
+    bottom: 0;
+    position: absolute;
+    width: 100%;
+}
+
+.inside #reviews-list li {
+    width: 100%;
+}
+@media screen and (max-width: 600px) {
+ 
+    .inside #map-container{
+    display: none;
+}
+.inside #restaurant-container, .inside #reviews-container {
+    width: 100%;
+}
+    
 }
