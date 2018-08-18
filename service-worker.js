@@ -4,7 +4,22 @@
  */
 var CACHE_VERSION = 'app-v1';
 var CACHE_FILES = [
-    '/',
+    '/mws-restaurant-stage-1-/',
+        '/mws-restaurant-stage-1-/https://unpkg.com/leaflet@1.3.1/dist/leaflet.js',
+        '/mws-restaurant-stage-1-/js/dbhelper.js',
+        '/mws-restaurant-stage-1-/js/main.js',
+        '/mws-restaurant-stage-1-/js/restaurant_info.js',
+        'https://unpkg.com/leaflet@1.3.1/dist/leaflet.css',
+    '/mws-restaurant-stage-1-/css/styles-xx-large.css',
+    '/mws-restaurant-stage-1-/css/styles-large.css',
+    '/mws-restaurant-stage-1-/css/styles-medium.css',
+    '/mws-restaurant-stage-1-/css/styles-small.css',
+    '/mws-restaurant-stage-1-/css/styles.css',
+        '/mws-restaurant-stage-1-/data/restaurants.json',
+    '/mws-restaurant-stage-1-/index.html',
+    '/mws-restaurant-stage-1-/restaurant.html'
+];
+/*'/',
     'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js',
     'js/dbhelper.js',
     'js/main.js',
@@ -18,8 +33,7 @@ var CACHE_FILES = [
     'data/restaurants.json',
     'index.html',
     'restaurant.html',
-    ];
-
+    ];*/
 self.addEventListener('install', function (event) {
     event.waitUntil(
         caches.open(CACHE_VERSION)
