@@ -1,14 +1,14 @@
 var CACHE_VERSION = 'app-v2';
 var CACHE_FILES = [
-    '/',
-    'js/main.js',
-    'css/styles-xx-large.css',
-    'css/styles-large.css',
-    'css/styles-medium.css',
-    'css/styles-small.css',
-    'css/styles.css',
-    'index.html',
-    'restaurant.html'
+    '/mws-restaurant-stage-1-/',
+    '/mws-restaurant-stage-1-/js/main.js',
+    '/mws-restaurant-stage-1-/css/styles-xx-large.css',
+    '/mws-restaurant-stage-1-/css/styles-large.css',
+    '/mws-restaurant-stage-1-/css/styles-medium.css',
+    '/mws-restaurant-stage-1-/css/styles-small.css',
+    '/mws-restaurant-stage-1-/css/styles.css',
+    '/mws-restaurant-stage-1-/index.html',
+    '/mws-restaurant-stage-1-/restaurant.html'
 ];
 
 self.addEventListener('install', function (event) {
