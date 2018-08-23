@@ -9,16 +9,15 @@ var CACHE_FILES = [
     'js/dbhelper.js',
     'js/main.js',
     'js/restaurant_info.js',
+    'service-worker.js',
     'https://unpkg.com/leaflet@1.3.1/dist/leaflet.css',
     'css/styles-xx-large.css',
     'css/styles-large.css',
     'css/styles-medium.css',
     'css/styles-small.css',
     'css/styles.css',
-    'data/restaurants.json',
     'index.html',
     'restaurant.html',
-    /*'http://localhost:1337/restaurants'*/
 ];
 /*'/',
     
@@ -29,7 +28,20 @@ self.addEventListener('install', function (event) {
     event.waitUntil(
         caches.open(CACHE_VERSION)
             .then(function (cache) {
-                console.log('Opened cache');
+                //Save data on first page load
+                fetch('http://localhost:1337/restaurants').then(function (response) {
+                    //console.log(response);
+                    restaurants = response.clone().json();
+
+                    return restaurants;
+                }).then(function (restaurants) {
+
+                    restaurants.forEach(restaurant => {
+                        //create database and save to it
+                        openDb(event.request, restaurant);
+
+                    });
+                })
                 return cache.addAll(CACHE_FILES);
             })
     );
@@ -53,19 +65,30 @@ self.addEventListener('fetch', function (event) {
                     openDb(event.request, restaurant);
 
                 });
-                
+
                 return response;
             })
         );
     } else {
         event.respondWith(
+            caches.open(CACHE_VERSION).then(function (cache) {
+                return cache.match(event.request).then(function (response) {
+                    var fetchPromise = fetch(event.request).then(function (networkResponse) {
+                        cache.put(event.request, networkResponse.clone());
+                        return networkResponse;
+                    })
+                    return response || fetchPromise;
+                })
+            })
+        );
+        /**event.respondWith(
             caches.match(event.request).then(function (res) {
                 if (res) {
                     return res;
                 }
                 requestBackend(event);
             })
-        )
+        )*/
 
     }
 });
