@@ -1,5 +1,6 @@
 let restaurant;
 var newMap;
+var idb = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB || window.shimIndexedDB;
 
 /**
  * Initialize map as soon as the page is loaded.
@@ -64,6 +65,7 @@ fetchRestaurantFromURL = (callback) => {
     error = 'No restaurant id in URL'
     callback(error, null);
   } else {
+    console.log("ID::",id);
     DBHelper.fetchRestaurantById(id, (error, restaurant) => {
       self.restaurant = restaurant;
       if (!restaurant) {
@@ -88,9 +90,10 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
 
   const image = document.getElementById('restaurant-img');
   image.className = 'restaurant-img'
-  image.src = DBHelper.imageUrlForRestaurant(restaurant);
+  //appended .jpg
+  image.src = DBHelper.imageUrlForRestaurant(restaurant) + '.jpg';
   // alt attribute
-  image.alt = "Photo of" + restaurant.name; 
+  image.alt = "Photo of " + restaurant.name; 
 
   const cuisine = document.getElementById('restaurant-cuisine');
   cuisine.innerHTML = restaurant.cuisine_type;

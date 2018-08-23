@@ -1,16 +1,42 @@
 let restaurants,
   neighborhoods,
-  cuisines
-var newMap
-var markers = []
+  cuisines;
+var newMap;
+var markers = [];
+idb = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB || window.shimIndexedDB;
 
 /**
  * Fetch neighborhoods and cuisines as soon as the page is loaded.
  */
 document.addEventListener('DOMContentLoaded', (event) => {
-  initMap(); // added 
-  fetchNeighborhoods();
-  fetchCuisines();
+  /**
+Source:: https://developer.mozilla.org/en-US/docs/Web/API/IDBFactory/open,
+https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB
+*/
+  const DB_NAME = 'mws-restaurants';
+  const DB_VERSION = 1; // Use a long long for this value (don't use a float)
+  const DB_STORE_NAME = 'restaurants';
+  var db;
+  //create database before page renders
+  var req = indexedDB.open(DB_NAME, DB_VERSION);
+  req.onsuccess = function (evt) {
+    db = this.result;
+    //db = evt.target.result;
+    var transaction = db.transaction(DB_STORE_NAME, 'readwrite');
+    var objectStore = transaction.objectStore(DB_STORE_NAME);
+    console.log("openDb DONE");
+    initMap(); // added 
+    fetchNeighborhoods();
+    fetchCuisines();
+  };
+  req.onupgradeneeded = function (evt) {
+    console.log("openDb.onupgradeneeded");
+    var store = evt.currentTarget.result.createObjectStore(
+      DB_STORE_NAME, { keyPath: 'id', autoIncrement: true });
+  };
+  //initMap(); // added 
+  //fetchNeighborhoods();
+  //fetchCuisines();
 });
 
 /**
@@ -22,6 +48,7 @@ fetchNeighborhoods = () => {
       console.error(error);
     } else {
       self.neighborhoods = neighborhoods;
+      saveNeighborhoods();//save to local storage
       fillNeighborhoodsHTML();
     }
   });
@@ -49,6 +76,7 @@ fetchCuisines = () => {
       console.error(error);
     } else {
       self.cuisines = cuisines;
+      saveCuisines()//save to local storage
       fillCuisinesHTML();
     }
   });
@@ -139,12 +167,14 @@ resetRestaurants = (restaurants) => {
   }
   self.markers = [];
   self.restaurants = restaurants;
+  saveRestaurants();//save to local storage
 }
 
 /**
  * Create all restaurants HTML and add them to the webpage.
  */
 fillRestaurantsHTML = (restaurants = self.restaurants) => {
+  //alert('1');
   const ul = document.getElementById('restaurants-list');
   restaurants.forEach(restaurant => {
     ul.append(createRestaurantHTML(restaurant));
@@ -160,9 +190,10 @@ createRestaurantHTML = (restaurant) => {
 
   const image = document.createElement('img');
   image.className = 'restaurant-img';
-  image.src = DBHelper.imageUrlForRestaurant(restaurant);
+  //appended .jpg
+  image.src = DBHelper.imageUrlForRestaurant(restaurant) + '.jpg';
   // alt attribute
-  image.alt = "Photo of" + restaurant.name;
+  image.alt = "Photo of " + restaurant.name;
   li.append(image);
 
   const name = document.createElement('h1');
@@ -212,17 +243,18 @@ addMarkersToMap = (restaurants = self.restaurants) => {
 } */
 
 saveRestaurants = () => {
-  var restaurants = JSON.stringify(restaurants);
-  localStorage.restaurants = restaurants;
+ // var restaurants = JSON.stringify(restaurants);
+  //localStorage.restaurants = self.restaurants;
 };
 saveCuisines = () => {
-  var cuisines = JSON.stringify(cuisines);
-  localStorage.cuisines = cuisines;
+  //var cuisines = JSON.stringify(cuisines);
+  //localStorage.cuisines = self.cuisines;
 };
 saveNeighborhoods = () => {
-  var neighbourhoods = JSON.stringify(neighborhoods);
-  localStorage.neighbourhoods = neighbourhoods;
+//  var neighbourhoods = JSON.stringify(neighborhoods);
+  //localStorage.neighbourhoods = self.neighborhoods;
 };
+
 
 // start service worker
 if ('serviceWorker' in navigator) {
@@ -230,3 +262,4 @@ if ('serviceWorker' in navigator) {
     .register('./service-worker.js')
     .then(function () { console.log('Service Worker Registered'); });
 }
+

@@ -1,25 +1,10 @@
+
 /**
  * Source: https://www.sitepoint.com/getting-started-with-service-workers/
  * ,https://developers.google.com/web/ilt/pwa/caching-files-with-service-worker
  */
 var CACHE_VERSION = 'app-v1';
 var CACHE_FILES = [
-    '/mws-restaurant-stage-1-/',
-        '/mws-restaurant-stage-1-/https://unpkg.com/leaflet@1.3.1/dist/leaflet.js',
-        '/mws-restaurant-stage-1-/js/dbhelper.js',
-        '/mws-restaurant-stage-1-/js/main.js',
-        '/mws-restaurant-stage-1-/js/restaurant_info.js',
-        'https://unpkg.com/leaflet@1.3.1/dist/leaflet.css',
-    '/mws-restaurant-stage-1-/css/styles-xx-large.css',
-    '/mws-restaurant-stage-1-/css/styles-large.css',
-    '/mws-restaurant-stage-1-/css/styles-medium.css',
-    '/mws-restaurant-stage-1-/css/styles-small.css',
-    '/mws-restaurant-stage-1-/css/styles.css',
-        '/mws-restaurant-stage-1-/data/restaurants.json',
-    '/mws-restaurant-stage-1-/index.html',
-    '/mws-restaurant-stage-1-/restaurant.html'
-];
-/*'/',
     'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js',
     'js/dbhelper.js',
     'js/main.js',
@@ -33,7 +18,13 @@ var CACHE_FILES = [
     'data/restaurants.json',
     'index.html',
     'restaurant.html',
+    /*'http://localhost:1337/restaurants'*/
+];
+/*'/',
+    
     ];*/
+var idb;// = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB || window.shimIndexedDB;
+console.log("IDB", idb);
 self.addEventListener('install', function (event) {
     event.waitUntil(
         caches.open(CACHE_VERSION)
@@ -45,17 +36,28 @@ self.addEventListener('install', function (event) {
 });
 
 self.addEventListener('fetch', function (event) {
-    console.log("URL: " + event.request.url);
-    /*if (event.request.url.indexOf('https://api.tiles.mapbox.com/v4/') == 0) {
+
+    console.log('[Service Worker] Fetch', event.request.url);
+    var dataUrl = 'http://localhost:1337/restaurants';
+    if (event.request.url.indexOf(dataUrl) > -1) {
         event.respondWith(
-            // Handle Maps API requests in a generic fashion,
-            // by returning a Promise that resolves to a Response.
-            function () {
-                console.log("newURL: " + event.request.url);
-                return fetch(event.request.url);
-            }
+            fetch(event.request).then(function (response) {
+
+                restaurants = response.clone().json();
+
+                return restaurants;
+            }).then(function (restaurants) {
+
+                restaurants.forEach(restaurant => {
+                    //create database and save to it
+                    openDb(event.request, restaurant);
+
+                });
+                
+                return response;
+            })
         );
-    } else {*/
+    } else {
         event.respondWith(
             caches.match(event.request).then(function (res) {
                 if (res) {
@@ -64,7 +66,8 @@ self.addEventListener('fetch', function (event) {
                 requestBackend(event);
             })
         )
-/*}*/
+
+    }
 });
 
 function requestBackend(event) {
@@ -96,3 +99,87 @@ self.addEventListener('activate', function (event) {
         })
     )
 });
+
+/**
+Source:: https://developer.mozilla.org/en-US/docs/Web/API/IDBFactory/open,
+https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB
+*/
+const DB_NAME = 'mws-restaurants';
+const DB_VERSION = 1; // Use a long long for this value (don't use a float)
+const DB_STORE_NAME = 'restaurants';
+
+var db;
+
+// Used to keep track of which view is displayed to avoid uselessly reloading it
+var current_view_pub_key;
+
+function openDb(url, restaurant) {
+    console.log("openDb ...");
+    var req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onsuccess = function (evt) {
+        // Better use "this" than "req" to get the result to avoid problems with
+        // garbage collection.
+        // db = req.result;
+        db = this.result;
+        console.log("openDb DONE");
+        addRestaurant(url, restaurant);
+    };
+    req.onerror = function (evt) {
+        console.error("openDb:", evt.target.errorCode);
+    };
+
+    req.onupgradeneeded = function (evt) {
+        console.log("openDb.onupgradeneeded");
+        var store = evt.currentTarget.result.createObjectStore(
+            DB_STORE_NAME, { keyPath: 'id', autoIncrement: true });
+    };
+}
+/**
+ * Add to DB
+ */
+/**
+   * @param {string} store_name
+   * @param {string} mode either "readonly" or "readwrite"
+   */
+function getObjectStore(store_name, mode) {
+    var tx = db.transaction(store_name, mode);
+    return tx.objectStore(store_name);
+}
+
+function clearObjectStore(store_name) {
+    var store = getObjectStore(DB_STORE_NAME, 'readwrite');
+    var req = store.clear();
+    req.onsuccess = function (evt) {
+        console.log('clearObjStr success')
+    };
+    req.onerror = function (evt) {
+        console.error("clearObjectStore:", evt.target.errorCode);
+
+    };
+}
+
+
+function addRestaurant(url, json) {
+    //console.log("addRestaurant arguments:", arguments);
+    var obj = { url: url, response: json };
+
+    var store = getObjectStore(DB_STORE_NAME, 'readwrite');
+    var req;
+    try {
+        console.log('j', json);
+        req = store.add(json);
+    } catch (e) {
+        if (e.name == 'DataCloneError')
+            console.log("addRestaurant error:");
+        throw e;
+    }
+    req.onsuccess = function (evt) {
+        console.log("Insertion in DB successful");
+    };
+    req.onerror = function () {
+        console.error("addRestaurant error", this.error);
+    };
+}
+/**
+ * Read DB
+ */
