@@ -203,6 +203,3 @@ function addRestaurant(url, json) {
         console.error("addRestaurant error", this.error);
     };
 }
-/**
- * Read DB
- */
