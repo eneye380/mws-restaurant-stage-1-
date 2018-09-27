@@ -1,11 +1,28 @@
 let restaurant;
+let reviews;
 var newMap;
 var idb = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB || window.shimIndexedDB;
+
+//opens modal
+document.getElementById("openModalBtn").addEventListener('click', () => {
+  fillRestaurantId();
+  document.getElementById('id01').style.display = 'block';
+  console.log("opening modal!!!");
+});
+//closes modal
+document.getElementById("closeModalBtn").addEventListener('click', () => {
+  document.getElementById('id01').style.display = 'none';
+  console.log("closing modal!!!");
+});
+/*document.getElementById("review-submit").addEventListener('click', () => {
+  postReview();
+  console.log("submitting!!!");
+});*/
 
 /**
  * Initialize map as soon as the page is loaded.
  */
-document.addEventListener('DOMContentLoaded', (event) => {  
+document.addEventListener('DOMContentLoaded', (event) => {
   initMap();
 });
 
@@ -16,7 +33,7 @@ initMap = () => {
   fetchRestaurantFromURL((error, restaurant) => {
     if (error) { // Got an error!
       console.error(error);
-    } else {      
+    } else {
       self.newMap = L.map('map', {
         center: [restaurant.latlng.lat, restaurant.latlng.lng],
         zoom: 16,
@@ -28,14 +45,14 @@ initMap = () => {
         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
           '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
           'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-        id: 'mapbox.streets'    
+        id: 'mapbox.streets'
       }).addTo(newMap);
       fillBreadcrumb();
       DBHelper.mapMarkerForRestaurant(self.restaurant, self.newMap);
     }
   });
-}  
- 
+}
+
 /* window.initMap = () => {
   fetchRestaurantFromURL((error, restaurant) => {
     if (error) { // Got an error!
@@ -65,7 +82,7 @@ fetchRestaurantFromURL = (callback) => {
     error = 'No restaurant id in URL'
     callback(error, null);
   } else {
-    console.log("ID::",id);
+    console.log("ID::", id);
     DBHelper.fetchRestaurantById(id, (error, restaurant) => {
       self.restaurant = restaurant;
       if (!restaurant) {
@@ -81,6 +98,7 @@ fetchRestaurantFromURL = (callback) => {
 /**
  * Create restaurant HTML and add it to the webpage
  */
+
 fillRestaurantHTML = (restaurant = self.restaurant) => {
   const name = document.getElementById('restaurant-name');
   name.innerHTML = restaurant.name;
@@ -93,7 +111,7 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
   //appended .jpg
   image.src = DBHelper.imageUrlForRestaurant(restaurant) + '.jpg';
   // alt attribute
-  image.alt = "Photo of " + restaurant.name; 
+  image.alt = "Photo of " + restaurant.name;
 
   const cuisine = document.getElementById('restaurant-cuisine');
   cuisine.innerHTML = restaurant.cuisine_type;
@@ -102,6 +120,23 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
   if (restaurant.operating_hours) {
     fillRestaurantHoursHTML();
   }
+  // fill reviews
+  //fillReviewsHTML();
+  // fetch reviews
+  fetchReviewsForRestaurant();
+}
+
+/**
+ * Get reviews for current restaurant.
+ */
+fetchReviewsForRestaurant = (restaurant = self.restaurant) => {
+  const id = restaurant.id;
+  const url = `http://localhost:1337/reviews/?restaurant_id=${id}`;
+  fetch(url)
+    .then(response => response.json())
+    .then(reviews => self.reviews = reviews)
+    .catch(e => console.error(e));
+
   // fill reviews
   fillReviewsHTML();
 }
@@ -129,7 +164,7 @@ fillRestaurantHoursHTML = (operatingHours = self.restaurant.operating_hours) => 
 /**
  * Create all reviews HTML and add them to the webpage.
  */
-fillReviewsHTML = (reviews = self.restaurant.reviews) => {
+fillReviewsHTML = (reviews = self.reviews) => {
   const container = document.getElementById('reviews-container');
   const title = document.createElement('h2');
   title.innerHTML = 'Reviews';
@@ -175,7 +210,7 @@ createReviewHTML = (review) => {
 /**
  * Add restaurant name to the breadcrumb navigation menu
  */
-fillBreadcrumb = (restaurant=self.restaurant) => {
+fillBreadcrumb = (restaurant = self.restaurant) => {
   const breadcrumb = document.getElementById('breadcrumb');
   const li = document.createElement('li');
   li.innerHTML = restaurant.name;
@@ -198,9 +233,74 @@ getParameterByName = (name, url) => {
   return decodeURIComponent(results[2].replace(/\+/g, ' '));
 }
 
+//Project 3
+
+/**
+ * Set restaurant_id field
+ */
+fillRestaurantId = (restaurant = self.restaurant) => {
+  document.getElementById("restaurant_id").value = restaurant.id;
+}
+
+/**
+ * Modal js
+ * Source: https://www.w3schools.com/howto/howto_css_signup_form.asp
+ */
+// Get the modal
+var modal = document.getElementById('id01');
+
+// When the user clicks anywhere outside of the modal, close it
+window.onclick = function (event) {
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+}
+
+//post review
+postReview = () => {
+  var a = document.forms["Form"]["restaurant_id"].value;
+  var b = document.forms["Form"]["name"].value;
+  var c = document.forms["Form"]["rating"].value;
+  var d = document.forms["Form"]["comments"].value;
+
+  console.log("Restaurant_id :: ", a);
+  console.log("Name :: ", b);
+  console.log("Rating :: ", c);
+  console.log("Comments :: ", d);
+
+  if (a == null || a == "", b == null || b == "", c == null || c == "", d == null || d == "") {
+    console.log('false');
+    return false;
+  } else {
+    console.log('true');
+    return true;
+  }
+}
+
 // start service worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker
     .register('./service-worker.js')
-    .then(function () { console.log('Service Worker Registered'); });
+    .then(function () {
+      console.log('Service Worker Registered');
+    });
+}
+
+// Then later, request a one-off sync:
+navigator.serviceWorker.ready.then(function (swRegistration) {
+  document.getElementById("review-submit").addEventListener('click', () => {
+    if (postReview()) {
+      swRegistration.sync.register('postReview').then(function () {
+        document.getElementById("review-hint").innerHTML = "";
+        console.log('Sync Registered');
+      });
+    } else {
+      document.getElementById("review-hint").innerText = "Please Fill All Required Field";
+    }
+  });
+
+});
+
+function send_message_to_sw(msg) {
+  navigator.serviceWorker.controller.postMessage("Client 1 says '" + msg + "'");
 }

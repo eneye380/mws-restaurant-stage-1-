@@ -1,9 +1,8 @@
-
 /**
  * Source: https://www.sitepoint.com/getting-started-with-service-workers/
  * ,https://developers.google.com/web/ilt/pwa/caching-files-with-service-worker
  */
-var CACHE_VERSION = 'app-v1';
+var CACHE_VERSION = 'app-v19';
 var CACHE_FILES = [
     'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js',
     'js/dbhelper.js',
@@ -22,28 +21,28 @@ var CACHE_FILES = [
 /*'/',
     
     ];*/
-var idb;// = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB || window.shimIndexedDB;
+var idb; // = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB || window.shimIndexedDB;
 console.log("IDB", idb);
 self.addEventListener('install', function (event) {
     event.waitUntil(
         caches.open(CACHE_VERSION)
-            .then(function (cache) {
-                //Save data on first page load
-                fetch('http://localhost:1337/restaurants').then(function (response) {
-                    //console.log(response);
-                    restaurants = response.clone().json();
+        .then(function (cache) {
+            //Save data on first page load
+            fetch('http://localhost:1337/restaurants').then(function (response) {
+                //console.log(response);
+                restaurants = response.clone().json();
 
-                    return restaurants;
-                }).then(function (restaurants) {
+                return restaurants;
+            }).then(function (restaurants) {
 
-                    restaurants.forEach(restaurant => {
-                        //create database and save to it
-                        openDb(event.request, restaurant);
+                restaurants.forEach(restaurant => {
+                    //create database and save to it
+                    openDb(event.request, restaurant);
 
-                    });
-                })
-                return cache.addAll(CACHE_FILES);
+                });
             })
+            return cache.addAll(CACHE_FILES);
+        })
     );
 });
 
@@ -154,16 +153,19 @@ function openDb(url, restaurant) {
     req.onupgradeneeded = function (evt) {
         console.log("openDb.onupgradeneeded");
         var store = evt.currentTarget.result.createObjectStore(
-            DB_STORE_NAME, { keyPath: 'id', autoIncrement: true });
+            DB_STORE_NAME, {
+                keyPath: 'id',
+                autoIncrement: true
+            });
     };
 }
 /**
  * Add to DB
  */
 /**
-   * @param {string} store_name
-   * @param {string} mode either "readonly" or "readwrite"
-   */
+ * @param {string} store_name
+ * @param {string} mode either "readonly" or "readwrite"
+ */
 function getObjectStore(store_name, mode) {
     var tx = db.transaction(store_name, mode);
     return tx.objectStore(store_name);
@@ -184,7 +186,10 @@ function clearObjectStore(store_name) {
 
 function addRestaurant(url, json) {
     //console.log("addRestaurant arguments:", arguments);
-    var obj = { url: url, response: json };
+    var obj = {
+        url: url,
+        response: json
+    };
 
     var store = getObjectStore(DB_STORE_NAME, 'readwrite');
     var req;
@@ -202,4 +207,110 @@ function addRestaurant(url, json) {
     req.onerror = function () {
         console.error("addRestaurant error", this.error);
     };
+}
+
+self.addEventListener('sync', function (event) {
+    if (event.tag == 'myFirstSync') {
+        event.waitUntil(doSomeStuff());
+    }
+});
+
+doSomeStuff = () => {
+    console.log('working online!!!');
+}
+
+self.addEventListener('sync', function (event) {
+    if (event.tag == 'postReview') {
+        event.waitUntil(postt());
+    }
+});
+
+self.addEventListener('message', function (event) {
+    console.log("SW Received Message: " + event.data);
+});
+
+/**
+ * Adding a Review
+ * Source : https://stackoverflow.com/questions/29775797/fetch-post-json-data
+ */
+postt = () => {
+    console.log("service worker :: ");
+    let postURL = "http://localhost:1337/reviews/";
+    postWithAsync(postURL);
+    //postWithoutAsync(postURL);
+    // let restaurant_id = document.getElementById("restaurant_id");
+    //let name = document.getElementById("name");
+    //let rating = document.getElementById("rating");
+    //let comments = document.getElementById("comments");
+    
+    
+    /*const rawResponse = fetch('http://localhost:1337/reviews/', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            restaurant_id: 'restaurant_id.value' ,
+            name: 'name.value' ,
+            rating: 'rating.value' ,
+            comments: 'comments.value'
+        })
+    });
+    const content = rawResponse.json();
+
+    console.log(content);*/
+}
+/*postReview = () => {
+    let restaurant_id = document.getElementById("restaurant_id");
+    console.log("Restaurant_id:: ", restaurant_id.value);
+    let name = document.getElementById("name");
+    console.log("Name:: ", name.value);
+    let rating = document.getElementById("rating");
+    console.log("Rating:: ", rating.value);
+    let comments = document.getElementById("comments");
+    console.log("Comments:: ", comments.value);
+}*/
+postWithAsync = (url) => {
+    (async () => {
+        const rawResponse = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                restaurant_id: '3',
+                name: 'abdulmumin',
+                rating: '2',
+                comments: 'NIce food'
+            })
+        });
+        const content = await rawResponse.json();
+
+        console.log(content);
+    })();
+}
+
+postWithoutAsync = (url) => {
+    fetch(url, {
+        method: 'post',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            restaurant_id: 'restaurant_id.value',
+            name: 'name.value',
+            rating: 'rating.value',
+            comments: 'comments.value'
+        })
+      })
+      .then(json)
+      .then(function (data) {
+        console.log('Request succeeded with JSON response', data);
+      })
+      .catch(function (error) {
+        console.log('Request failed', error);
+      });
 }
