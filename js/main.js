@@ -32,11 +32,12 @@ https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB
   req.onupgradeneeded = function (evt) {
     console.log("openDb.onupgradeneeded");
     var store = evt.currentTarget.result.createObjectStore(
-      DB_STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      DB_STORE_NAME, {
+        keyPath: 'id',
+        autoIncrement: true
+      });
   };
-  //initMap(); // added 
-  //fetchNeighborhoods();
-  //fetchCuisines();
+
 });
 
 /**
@@ -48,7 +49,7 @@ fetchNeighborhoods = () => {
       console.error(error);
     } else {
       self.neighborhoods = neighborhoods;
-      saveNeighborhoods();//save to local storage
+      saveNeighborhoods(); //save to local storage
       fillNeighborhoodsHTML();
     }
   });
@@ -76,7 +77,7 @@ fetchCuisines = () => {
       console.error(error);
     } else {
       self.cuisines = cuisines;
-      saveCuisines()//save to local storage
+      saveCuisines() //save to local storage
       fillCuisinesHTML();
     }
   });
@@ -101,10 +102,10 @@ fillCuisinesHTML = (cuisines = self.cuisines) => {
  */
 initMap = () => {
   self.newMap = L.map('map', {
-        center: [40.722216, -73.987501],
-        zoom: 12,
-        scrollWheelZoom: false
-      });
+    center: [40.722216, -73.987501],
+    zoom: 12,
+    scrollWheelZoom: false
+  });
   L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.jpg70?access_token={mapboxToken}', {
     mapboxToken: 'pk.eyJ1IjoiZW5leWUiLCJhIjoiY2prbGZmNG12MHBuZTN3bWd0NzdjeWQ2dyJ9.AJhl0s5h1Ek0JhgmxFG58A',
     maxZoom: 18,
@@ -167,7 +168,7 @@ resetRestaurants = (restaurants) => {
   }
   self.markers = [];
   self.restaurants = restaurants;
-  saveRestaurants();//save to local storage
+  saveRestaurants(); //save to local storage
 }
 
 /**
@@ -224,13 +225,14 @@ addMarkersToMap = (restaurants = self.restaurants) => {
     // Add marker to the map
     const marker = DBHelper.mapMarkerForRestaurant(restaurant, self.newMap);
     marker.on("click", onClick);
+
     function onClick() {
       window.location.href = marker.options.url;
     }
     self.markers.push(marker);
   });
 
-} 
+}
 /* addMarkersToMap = (restaurants = self.restaurants) => {
   restaurants.forEach(restaurant => {
     // Add marker to the map
@@ -243,7 +245,7 @@ addMarkersToMap = (restaurants = self.restaurants) => {
 } */
 
 saveRestaurants = () => {
- // var restaurants = JSON.stringify(restaurants);
+  // var restaurants = JSON.stringify(restaurants);
   //localStorage.restaurants = self.restaurants;
 };
 saveCuisines = () => {
@@ -251,7 +253,7 @@ saveCuisines = () => {
   //localStorage.cuisines = self.cuisines;
 };
 saveNeighborhoods = () => {
-//  var neighbourhoods = JSON.stringify(neighborhoods);
+  //  var neighbourhoods = JSON.stringify(neighborhoods);
   //localStorage.neighbourhoods = self.neighborhoods;
 };
 
@@ -291,12 +293,14 @@ btnAdd.addEventListener('click', (e) => {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker
     .register('./service-worker.js')
-    .then(function () { console.log('Service Worker Registered'); });
+    .then(function () {
+      console.log('Service Worker Registered');
+    });
 }
 // Register your service worker:
 //navigator.serviceWorker.register('/sw.js');
 
 // Then later, request a one-off sync:
-navigator.serviceWorker.ready.then(function(swRegistration) {
+navigator.serviceWorker.ready.then(function (swRegistration) {
   return swRegistration.sync.register('myFirstSync');
 });

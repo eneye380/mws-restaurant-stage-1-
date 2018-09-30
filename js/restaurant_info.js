@@ -18,12 +18,32 @@ document.getElementById("closeModalBtn").addEventListener('click', () => {
   postReview();
   console.log("submitting!!!");
 });*/
-
+const DB_NAME1 = 'mws-reviews';
+const DB_VERSION1 = 1; // Use a long long for this value (don't use a float)
+const DB_STORE_NAME1 = 'review';
+var db1;
 /**
  * Initialize map as soon as the page is loaded.
  */
 document.addEventListener('DOMContentLoaded', (event) => {
-  initMap();
+  //create database before page renders
+  var req1 = indexedDB.open(DB_NAME1, DB_VERSION1);
+  req1.onsuccess = function (evt) {
+    db1 = this.result;
+    //db = evt.target.result;
+    var transaction1 = db1.transaction(DB_STORE_NAME1, 'readwrite');
+    var objectStore1 = transaction1.objectStore(DB_STORE_NAME1);
+    console.log("Restaurant Info openDb1 DONE");
+    initMap();
+  };
+  req1.onupgradeneeded = function (evt) {
+    console.log("Restaurant Info openDb1.onupgradeneeded");
+    var store1 = evt.currentTarget.result.createObjectStore(
+      DB_STORE_NAME1, {
+        keyPath: 'id',
+        autoIncrement: true
+      });
+  };
 });
 
 /**
@@ -123,22 +143,26 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
   // fill reviews
   //fillReviewsHTML();
   // fetch reviews
-  fetchReviewsForRestaurant();
+  console.log(':: Reviewss');
+  //fetchReviewsForRestaurant();
+  fillReviewsHTML();
 }
 
 /**
  * Get reviews for current restaurant.
  */
-fetchReviewsForRestaurant = (restaurant = self.restaurant) => {
+fetchReviewsForRestaurant = (restaurant, callback) => {
   const id = restaurant.id;
+  console.log("CB", id);
   const url = `http://localhost:1337/reviews/?restaurant_id=${id}`;
   fetch(url)
     .then(response => response.json())
-    .then(reviews => self.reviews = reviews)
-    .catch(e => console.error(e));
+    .then(reviews => callback(null, reviews))
+    .catch(e => callback(e, null));
 
   // fill reviews
-  fillReviewsHTML();
+  console.log('1 Reviewss');
+  //fillReviewsHTML();
 }
 
 /**
@@ -164,23 +188,26 @@ fillRestaurantHoursHTML = (operatingHours = self.restaurant.operating_hours) => 
 /**
  * Create all reviews HTML and add them to the webpage.
  */
-fillReviewsHTML = (reviews = self.reviews) => {
-  const container = document.getElementById('reviews-container');
-  const title = document.createElement('h2');
-  title.innerHTML = 'Reviews';
-  container.appendChild(title);
-
-  if (!reviews) {
-    const noReviews = document.createElement('p');
-    noReviews.innerHTML = 'No reviews yet!';
-    container.appendChild(noReviews);
-    return;
-  }
-  const ul = document.getElementById('reviews-list');
-  reviews.forEach(review => {
-    ul.appendChild(createReviewHTML(review));
+fillReviewsHTML = () => {
+  console.log('fillReviewsHTML 2 Reviewss');
+  fetchReviewsForRestaurant(self.restaurant, (error, reviews) => {
+    const container = document.getElementById('reviews-container');
+    const title = document.createElement('h2');
+    title.innerHTML = 'Reviews';
+    container.appendChild(title);
+    console.log('fillReviewsHTML 3 Reviewss');
+    if (!reviews) {
+      const noReviews = document.createElement('p');
+      noReviews.innerHTML = 'No reviews yet!';
+      container.appendChild(noReviews);
+      return;
+    }
+    const ul = document.getElementById('reviews-list');
+    reviews.forEach(review => {
+      ul.appendChild(createReviewHTML(review));
+    });
+    container.appendChild(ul);
   });
-  container.appendChild(ul);
 }
 
 /**
@@ -193,7 +220,8 @@ createReviewHTML = (review) => {
   li.appendChild(name);
 
   const date = document.createElement('p');
-  date.innerHTML = review.date;
+  date.innerHTML = review.createdAt;
+  console.log("createReviewHTML Date :: ", review.createdAt);
   li.appendChild(date);
 
   const rating = document.createElement('p');
@@ -205,6 +233,15 @@ createReviewHTML = (review) => {
   li.appendChild(comments);
 
   return li;
+}
+
+/**
+ * Add new review to webpage
+ */
+addNewReviewToWebpage = (review) => {
+  const ul = document.getElementById('reviews-list');
+  ul.appendChild(createReviewHTML(review));
+  console.log("addNewReviewToWebpage");
 }
 
 /**
@@ -256,6 +293,70 @@ window.onclick = function (event) {
   }
 }
 
+
+
+/**
+ * 
+ * To store user review
+ * 
+Source:: https://developer.mozilla.org/en-US/docs/Web/API/IDBFactory/open,
+https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB
+*/
+
+// Used to keep track of which view is displayed to avoid uselessly reloading it
+var current_view_pub_key;
+
+function createDb(a, b, c, d) {
+  console.log("createDb ...");
+  var req = indexedDB.open(DB_NAME1);
+  req.onsuccess = function (evt) {
+    db1 = this.result;
+    console.log("createDb DONE");
+    setReview(a, b, c, d);
+  };
+  req.onerror = function (evt) {
+    console.error("createDb:", evt.target.errorCode);
+  };
+  /* req.onupgradeneeded = function (evt) {
+     console.log("createDb.onupgradeneeded");
+     var store = evt.currentTarget.result.createObjectStore(
+       DB_STORE_NAME, {
+         keyPath: 'id',
+         autoIncrement: true
+       });
+   };*/
+}
+
+function setReview(a, b, c, d) {
+  //console.log("addRestaurant arguments:", arguments);
+  var obj = {
+    restaurant_id: a,
+    name: b,
+    rating: c,
+    comments: d
+  };
+
+  //var store = getObjectStore(DB_STORE_NAME1, 'readwrite');
+  var tx = db1.transaction(DB_STORE_NAME1, 'readwrite');
+  var store = tx.objectStore(DB_STORE_NAME1);
+  var req;
+  try {
+    console.log('o', obj);
+    req = store.add(obj);
+  } catch (e) {
+    if (e.name == 'DataCloneError')
+      console.log("setReview error:");
+    throw e;
+  }
+  req.onsuccess = function (evt) {
+    console.log("setReview, Insertion in DB successful");
+  };
+  req.onerror = function () {
+    console.error("setReview error", this.error);
+  };
+}
+
+
 //post review
 postReview = () => {
   var a = document.forms["Form"]["restaurant_id"].value;
@@ -268,14 +369,70 @@ postReview = () => {
   console.log("Rating :: ", c);
   console.log("Comments :: ", d);
 
+
   if (a == null || a == "", b == null || b == "", c == null || c == "", d == null || d == "") {
     console.log('false');
     return false;
   } else {
     console.log('true');
+    localStorage.restaurant_id = a;
+    localStorage.name = b;
+    localStorage.rating = c;
+    localStorage.comments = d;
+    navigator.serviceWorker.controller.postMessage(getReviewObject());
+    createDb(a, b, c, d);
     return true;
   }
 }
+
+function getReviewObject() {
+  var obj = {
+    restaurant_id: localStorage.restaurant_id,
+    name: localStorage.name,
+    rating: localStorage.rating,
+    comments: localStorage.comments
+  };
+
+  console.log("getReviewObject");
+  var currentdate = new Date();
+  var datetime = "" + currentdate.getFullYear() + "-" +
+    (currentdate.getMonth() + 1) + "-" +
+    currentdate.getDate() + "  " +
+    currentdate.getHours() + ":" +
+    currentdate.getMinutes() + ":" +
+    currentdate.getSeconds();
+  obj.createdAt = datetime;
+  addNewReviewToWebpage(obj);
+  return obj;
+}
+
+/**
+ * Add to DB
+ */
+/**
+ * @param {string} store_name
+ * @param {string} mode either "readonly" or "readwrite"
+ */
+function getObjectStore(store_name, mode) {
+  var tx = db1.transaction(store_name, mode);
+  return tx.objectStore(store_name);
+}
+
+function clearObjectStore(store_name) {
+  var store = getObjectStore(DB_STORE_NAME1, 'readwrite');
+  var req = store.clear();
+  req.onsuccess = function (evt) {
+    console.log('clearObjStr success')
+  };
+  req.onerror = function (evt) {
+    console.error("clearObjectStore:", evt.target.errorCode);
+
+  };
+}
+
+window.addEventListener('message', event => {
+  console.log(event)
+}, false);
 
 // start service worker
 if ('serviceWorker' in navigator) {
@@ -292,6 +449,8 @@ navigator.serviceWorker.ready.then(function (swRegistration) {
     if (postReview()) {
       swRegistration.sync.register('postReview').then(function () {
         document.getElementById("review-hint").innerHTML = "";
+        //send message to service worker
+        //navigator.serviceWorker.controller.postMessage(getReviewObject());
         console.log('Sync Registered');
       });
     } else {

@@ -2,7 +2,7 @@
  * Source: https://www.sitepoint.com/getting-started-with-service-workers/
  * ,https://developers.google.com/web/ilt/pwa/caching-files-with-service-worker
  */
-var CACHE_VERSION = 'app-v19';
+var CACHE_VERSION = 'app-v79';
 var CACHE_FILES = [
     'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js',
     'js/dbhelper.js',
@@ -225,8 +225,11 @@ self.addEventListener('sync', function (event) {
     }
 });
 
+var reviewFormData = null;
+// recieve message from client 
 self.addEventListener('message', function (event) {
-    console.log("SW Received Message: " + event.data);
+    reviewFormData = event.data;
+    console.log("SW Received Message: ", event.data);
 });
 
 /**
@@ -236,42 +239,12 @@ self.addEventListener('message', function (event) {
 postt = () => {
     console.log("service worker :: ");
     let postURL = "http://localhost:1337/reviews/";
-    postWithAsync(postURL);
-    //postWithoutAsync(postURL);
-    // let restaurant_id = document.getElementById("restaurant_id");
-    //let name = document.getElementById("name");
-    //let rating = document.getElementById("rating");
-    //let comments = document.getElementById("comments");
-    
-    
-    /*const rawResponse = fetch('http://localhost:1337/reviews/', {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            restaurant_id: 'restaurant_id.value' ,
-            name: 'name.value' ,
-            rating: 'rating.value' ,
-            comments: 'comments.value'
-        })
-    });
-    const content = rawResponse.json();
-
-    console.log(content);*/
+    // postWithAsync(postURL);
+    getReview(postURL);
 }
-/*postReview = () => {
-    let restaurant_id = document.getElementById("restaurant_id");
-    console.log("Restaurant_id:: ", restaurant_id.value);
-    let name = document.getElementById("name");
-    console.log("Name:: ", name.value);
-    let rating = document.getElementById("rating");
-    console.log("Rating:: ", rating.value);
-    let comments = document.getElementById("comments");
-    console.log("Comments:: ", comments.value);
-}*/
-postWithAsync = (url) => {
+
+postWithAsync = (url, review) => {
+    //console.log("Get Review", getReview());
     (async () => {
         const rawResponse = await fetch(url, {
             method: 'POST',
@@ -279,38 +252,135 @@ postWithAsync = (url) => {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                restaurant_id: '3',
-                name: 'abdulmumin',
-                rating: '2',
-                comments: 'NIce food'
-            })
+            body: JSON.stringify(reviewFormData)
         });
         const content = await rawResponse.json();
 
         console.log(content);
+        this.clients.matchAll().then(clients => {
+            clients.forEach(client => client.postMessage('hello from the other side'));
+          });
+        deleteData();
     })();
 }
 
 postWithoutAsync = (url) => {
     fetch(url, {
-        method: 'post',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            restaurant_id: 'restaurant_id.value',
-            name: 'name.value',
-            rating: 'rating.value',
-            comments: 'comments.value'
+            method: 'post',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                restaurant_id: 'restaurant_id.value',
+                name: 'name.value',
+                rating: 'rating.value',
+                comments: 'comments.value'
+            })
         })
-      })
-      .then(json)
-      .then(function (data) {
-        console.log('Request succeeded with JSON response', data);
-      })
-      .catch(function (error) {
-        console.log('Request failed', error);
-      });
+        .then(json)
+        .then(function (data) {
+            console.log('Request succeeded with JSON response', data);
+        })
+        .catch(function (error) {
+            console.log('Request failed', error);
+        });
 }
+
+//get review from indexedDB
+getReview = (url) => {
+    /**
+     * Source:: https://developer.mozilla.org/en-US/docs/Web/API/IDBFactory/open,
+    https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB
+     */
+
+    const DB_NAME = 'mws-reviews';
+    const DB_VERSION = 1; // Use a long long for this value (don't use a float)
+    const DB_STORE_NAME = 'review';
+    var review_idb;
+    var dbr;
+    /**
+     * Check if data exist in database
+     */
+    var request = indexedDB.open(DB_NAME);
+    request.onerror = function (event) {
+        alert("Why didn't you allow my web app to use IndexedDB?!");
+    };
+    request.onsuccess = function (event) {
+        dbr = event.target.result;
+        var transaction = dbr.transaction(DB_STORE_NAME, 'readonly');
+        var objectStore = transaction.objectStore(DB_STORE_NAME);
+
+        //var countRequest = objectStore.count();
+        review_idb = objectStore.getAll();
+        review_idb.onsuccess = function () {
+            var review = review_idb.result;
+            review = review[review.length - 1];
+            console.log("Review to be added1 -", review);
+            postWithAsync(url, review);
+
+        }
+    }
+}
+deleteData = () => {
+    const DB_NAME = 'mws-reviews';
+    const DB_VERSION = 1; // Use a long long for this value (don't use a float)
+
+    /**
+     * Check if data exist in database
+     */
+    var request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onerror = function (event) {
+        alert("Why didn't you allow my web app to use IndexedDB?!");
+    };
+    request.onsuccess = function (event) {
+        var dbr = event.target.result;
+        //deleteReview(dbr);
+        deleteResult(dbr);
+    }
+}
+deleteReview = (db) => {
+    const DB_STORE_NAME = 'review';
+    // open a read/write db transaction, ready for deleting the data
+    var transaction = db.transaction(DB_STORE_NAME, "readwrite");
+
+    // report on the success of the transaction completing, when everything is done
+    transaction.oncomplete = function (event) {
+        console.log('<li>Transaction completed.</li>');
+    };
+
+    transaction.onerror = function (event) {
+        console.log('<li>Transaction not opened due to error: ' + transaction.error + '</li>');
+    };
+
+    // create an object store on the transaction
+    var objectStore = transaction.objectStore(DB_STORE_NAME);
+
+    // Make a request to delete the specified record out of the object store
+    var objectStoreRequest = objectStore.delete(1);
+
+    objectStoreRequest.onsuccess = function (event) {
+        // report the success of our request
+        console.log('<li>Request successful.</li>', objectStoreRequest.result);
+    };
+};
+
+function deleteResult(db) {
+    const DB_STORE_NAME = 'review';
+    var transaction = db.transaction(DB_STORE_NAME, 'readwrite');
+    var objectStore = transaction.objectStore(DB_STORE_NAME);
+
+    objectStore.openCursor().onsuccess = function (event) {
+        var cursor = event.target.result;
+        if (cursor) {
+            var request = cursor.delete();
+            request.onsuccess = function () {
+                console.log('Deleted!!! Using Cursor');
+            };
+
+            cursor.continue();
+        } else {
+            console.log('Entries displayed.');
+        }
+    };
+};
