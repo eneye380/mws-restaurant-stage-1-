@@ -2,7 +2,7 @@
  * Source: https://www.sitepoint.com/getting-started-with-service-workers/
  * ,https://developers.google.com/web/ilt/pwa/caching-files-with-service-worker
  */
-var CACHE_VERSION = 'app-v79';
+var CACHE_VERSION = 'app-v96';
 var CACHE_FILES = [
     'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js',
     'js/dbhelper.js',
@@ -50,7 +50,8 @@ self.addEventListener('fetch', function (event) {
 
     console.log('[Service Worker] Fetch', event.request.url);
     var dataUrl = 'http://localhost:1337/restaurants';
-    if (event.request.url.indexOf(dataUrl) > -1) {
+    var f = '?is_favorite';
+    if (event.request.url.indexOf(dataUrl) > -1 && !(event.request.url.indexOf(f) > -1)) {
         event.respondWith(
             fetch(event.request).then(function (response) {
 

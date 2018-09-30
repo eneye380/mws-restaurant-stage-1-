@@ -28,6 +28,7 @@ https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB
     initMap(); // added 
     fetchNeighborhoods();
     fetchCuisines();
+
   };
   req.onupgradeneeded = function (evt) {
     console.log("openDb.onupgradeneeded");
@@ -95,6 +96,7 @@ fillCuisinesHTML = (cuisines = self.cuisines) => {
     option.value = cuisine;
     select.append(option);
   });
+
 }
 
 /**
@@ -214,8 +216,70 @@ createRestaurantHTML = (restaurant) => {
   more.href = DBHelper.urlForRestaurant(restaurant);
   li.append(more)
 
+  //added
+  const like = document.createElement('button');
+  like.innerHTML = 'like';
+  like.setAttribute("id", "like");
+  like.setAttribute("name", restaurant.id);
+  like.setAttribute("type", "button");
+  like.setAttribute("class", "dislike");
+
+  // like.setAttribute("style", "margin-left: 10px");
+  //var like = document.getElementById("like");
+  like.addEventListener("click", (event) => {
+    event.preventDefault();
+    //unfavorite
+    var id = like.getAttribute("name");
+    console.log('{like} name - ', id)
+    if (like.classList.contains('like')) {
+      console.log("I dislike");
+      var url = `http://localhost:1337/restaurants/${id}/?is_favorite=false`;
+      //using a put request
+      putRequest(url, {
+          user: 'Dan'
+        })
+        .then(data => console.log(data)) // Result from the `response.json()` call
+        .catch(error => console.error(error));
+      like.setAttribute("style", "background-color: maroon");
+      like.innerHTML = 'like';
+      like.classList.remove('like');
+      like.classList.add('dislike');
+    } else {
+      //favorite
+      console.log("I like");
+
+      var url = `http://localhost:1337/restaurants/${id}/?is_favorite=true`;
+      //using a put request
+      putRequest(url, {
+          user: 'Dan'
+        })
+        .then(data => console.log(data)) // Result from the `response.json()` call
+        .catch(error => console.error(error));
+      
+      like.setAttribute("style", "background-color: #4CAF50");
+      like.classList.remove('dislike');
+      like.classList.add('like');
+    }
+
+  });
+  li.append(like);
+
   return li
 }
+
+
+function putRequest(url, data) {
+  return fetch(url, {
+      credentials: 'same-origin', // 'include', default: 'omit'
+      method: 'PUT', // 'GET', 'PUT', 'DELETE', etc.
+      body: JSON.stringify(data), // Coordinate the body type with 'Content-Type'
+      headers: new Headers({
+        'Content-Type': 'application/json'
+      }),
+    })
+    .then(response => response.json())
+}
+
 
 /**
  * Add markers for current restaurants to the map.
@@ -288,6 +352,8 @@ btnAdd.addEventListener('click', (e) => {
       deferredPrompt = null;
     });
 });
+
+
 
 // start service worker
 if ('serviceWorker' in navigator) {
