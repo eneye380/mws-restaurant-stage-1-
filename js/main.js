@@ -267,7 +267,7 @@ createRestaurantHTML = (restaurant) => {
   return li
 }
 
-
+//Source: https://gist.github.com/justsml/529d0b1ddc5249095ff4b890aad5e801
 function putRequest(url, data) {
   return fetch(url, {
       credentials: 'same-origin', // 'include', default: 'omit'
