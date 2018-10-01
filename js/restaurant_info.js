@@ -192,7 +192,7 @@ fillReviewsHTML = () => {
   console.log('fillReviewsHTML 2 Reviewss');
   fetchReviewsForRestaurant(self.restaurant, (error, reviews) => {
     const container = document.getElementById('reviews-container');
-    const title = document.createElement('h2');
+    const title = document.createElement('h3');
     title.innerHTML = 'Reviews';
     container.appendChild(title);
     console.log('fillReviewsHTML 3 Reviewss');
