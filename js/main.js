@@ -5,6 +5,12 @@ var newMap;
 var markers = [];
 idb = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB || window.shimIndexedDB;
 
+if (navigator.onLine) {
+  console.log("navigator.onLine - ONLINE");
+} else {
+  console.log("navigator.onLine - OFFLINE");
+}
+
 /**
  * Fetch neighborhoods and cuisines as soon as the page is loaded.
  */
@@ -215,14 +221,21 @@ createRestaurantHTML = (restaurant) => {
   more.innerHTML = 'View Details';
   more.href = DBHelper.urlForRestaurant(restaurant);
   li.append(more)
-
+  console.log("restaurant.is_favorite", restaurant.is_favorite);
   //added
   const like = document.createElement('button');
   like.innerHTML = 'like';
+  if (restaurant.is_favorite === "true") {
+    like.setAttribute("class", "like");
+    like.setAttribute("style", "background-color: #4CAF50");
+  } else {
+    like.setAttribute("class", "dislike");
+    like.setAttribute("style", "background-color: maroon");
+  }
   like.setAttribute("id", "like");
   like.setAttribute("name", restaurant.id);
   like.setAttribute("type", "button");
-  like.setAttribute("class", "dislike");
+  //like.setAttribute("class", "dislike");
 
   // like.setAttribute("style", "margin-left: 10px");
   //var like = document.getElementById("like");
@@ -238,7 +251,10 @@ createRestaurantHTML = (restaurant) => {
       putRequest(url, {
           user: 'Dan'
         })
-        .then(data => console.log(data)) // Result from the `response.json()` call
+        .then(data => {
+          console.log(data);
+          updateReviewDb(data.id, data.is_favorite);
+        }) // Result from the `response.json()` call
         .catch(error => console.error(error));
       like.setAttribute("style", "background-color: maroon");
       like.innerHTML = 'like';
@@ -253,9 +269,12 @@ createRestaurantHTML = (restaurant) => {
       putRequest(url, {
           user: 'Dan'
         })
-        .then(data => console.log(data)) // Result from the `response.json()` call
+        .then(data => {
+          console.log(data);
+          updateReviewDb(data.id, data.is_favorite);
+        }) // Result from the `response.json()` call
         .catch(error => console.error(error));
-      
+
       like.setAttribute("style", "background-color: #4CAF50");
       like.classList.remove('dislike');
       like.classList.add('like');
@@ -280,6 +299,49 @@ function putRequest(url, data) {
     .then(response => response.json())
 }
 
+/**
+ * Updates the is_favorite field in the indexedDb
+ * @param {String} restaurant_id 
+ * @param {String} is_fav 
+ */
+function updateReviewDb(restaurant_id, is_fav) {
+  const DB_NAME = 'mws-restaurants';
+  const DB_STORE_NAME = 'restaurants';
+  const DB_VERSION = 1; // Use a long long for this value (don't use a float)
+
+  /**
+   * Check if data exist in database
+   */
+  var request = indexedDB.open(DB_NAME, DB_VERSION);
+  request.onerror = function (event) {
+    alert("Why didn't you allow my web app to use IndexedDB?!");
+  };
+  request.onsuccess = function (event) {
+    var db = event.target.result;
+
+    var transaction = db.transaction(DB_STORE_NAME, 'readwrite');
+    var objectStore = transaction.objectStore(DB_STORE_NAME);
+
+    objectStore.openCursor().onsuccess = function (event) {
+      var cursor = event.target.result;
+      if (cursor) {
+        if (cursor.value.id === restaurant_id) {
+          const updateData = cursor.value;
+
+          updateData.is_favorite = is_fav;
+          const request = cursor.update(updateData);
+          request.onsuccess = function () {
+            console.log(`Restaurant ${restaurant_id} Updated Successfull!!!`);
+          };
+        }
+        cursor.continue();
+      } else {
+        console.log('Entries displayed.');
+      }
+    };
+  }
+
+}
 
 /**
  * Add markers for current restaurants to the map.

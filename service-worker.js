@@ -2,7 +2,7 @@
  * Source: https://www.sitepoint.com/getting-started-with-service-workers/
  * ,https://developers.google.com/web/ilt/pwa/caching-files-with-service-worker
  */
-var CACHE_VERSION = 'app-v96';
+var CACHE_VERSION = 'app-v117';
 var CACHE_FILES = [
     'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js',
     'js/dbhelper.js',
@@ -76,7 +76,14 @@ self.addEventListener('fetch', function (event) {
                     var fetchPromise = fetch(event.request).then(function (networkResponse) {
                         cache.put(event.request, networkResponse.clone());
                         return networkResponse;
-                    })
+                    });
+                    if(navigator.onLine){
+                        console.log("Cache Online");
+                        return fetchPromise;
+                    }else{
+                        console.log("Cache Offline");
+                        return response;
+                    }
                     return response || fetchPromise;
                 })
             })
@@ -257,7 +264,7 @@ postWithAsync = (url, review) => {
         });
         const content = await rawResponse.json();
 
-        console.log(content);
+        console.log("Review Sent",content);
         this.clients.matchAll().then(clients => {
             clients.forEach(client => client.postMessage('hello from the other side'));
           });
