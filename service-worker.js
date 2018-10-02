@@ -2,7 +2,7 @@
  * Source: https://www.sitepoint.com/getting-started-with-service-workers/
  * ,https://developers.google.com/web/ilt/pwa/caching-files-with-service-worker
  */
-var CACHE_VERSION = 'app-v117';
+var CACHE_VERSION = 'app-v122';
 var CACHE_FILES = [
     'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js',
     'js/dbhelper.js',
@@ -77,10 +77,10 @@ self.addEventListener('fetch', function (event) {
                         cache.put(event.request, networkResponse.clone());
                         return networkResponse;
                     });
-                    if(navigator.onLine){
+                    if (navigator.onLine) {
                         console.log("Cache Online");
                         return fetchPromise;
-                    }else{
+                    } else {
                         console.log("Cache Offline");
                         return response;
                     }
@@ -226,7 +226,9 @@ self.addEventListener('sync', function (event) {
 doSomeStuff = () => {
     console.log('working online!!!');
 }
-
+/**
+ * Uses Background Sync
+ */
 self.addEventListener('sync', function (event) {
     if (event.tag == 'postReview') {
         event.waitUntil(postt());
@@ -260,14 +262,14 @@ postWithAsync = (url, review) => {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(reviewFormData)
+            body: JSON.stringify(review)
         });
         const content = await rawResponse.json();
 
-        console.log("Review Sent",content);
+        console.log("Review Sent", content);
         this.clients.matchAll().then(clients => {
             clients.forEach(client => client.postMessage('hello from the other side'));
-          });
+        });
         deleteData();
     })();
 }
@@ -324,8 +326,14 @@ getReview = (url) => {
         review_idb.onsuccess = function () {
             var review = review_idb.result;
             review = review[review.length - 1];
-            console.log("Review to be added1 -", review);
-            postWithAsync(url, review);
+
+            if (review) {
+                console.log("Review to be added from indexedDb-", review);
+                postWithAsync(url, review);
+            } else {
+                console.log("Review to be added from form -", reviewFormData);
+                postWithAsync(url, reviewFormData);
+            }
 
         }
     }
