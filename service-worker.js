@@ -2,7 +2,7 @@
  * Source: https://www.sitepoint.com/getting-started-with-service-workers/
  * ,https://developers.google.com/web/ilt/pwa/caching-files-with-service-worker
  */
-var CACHE_VERSION = 'app-v122';
+var CACHE_VERSION = 'app-v140';
 var CACHE_FILES = [
     'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js',
     'js/dbhelper.js',
@@ -70,6 +70,16 @@ self.addEventListener('fetch', function (event) {
             })
         );
     } else {
+
+      /*  var url = "http://localhost:1337/reviews/?restaurant_id=";
+        if (navigator.onLine && event.request.method === 'GET' && event.request.url.indexOf(url) > -1) {
+            event.respondWith(
+                fetch(event.request).then(function (networkResponse) {
+                    return networkResponse;
+                })
+            );
+        }*/
+
         event.respondWith(
             caches.open(CACHE_VERSION).then(function (cache) {
                 return cache.match(event.request).then(function (response) {
@@ -77,12 +87,13 @@ self.addEventListener('fetch', function (event) {
                         cache.put(event.request, networkResponse.clone());
                         return networkResponse;
                     });
-                    if (navigator.onLine) {
-                        console.log("Cache Online");
+                    var url = "http://localhost:1337/reviews/?restaurant_id=";
+                    if(navigator.onLine && event.request.url.indexOf(url) > -1){
+                        console.log("Fetch Cache Online");
                         return fetchPromise;
-                    } else {
-                        console.log("Cache Offline");
-                        return response;
+                    }else{
+                        console.log("Fetch Cache Offline|Online");
+                        return response || fetchPromise;
                     }
                     return response || fetchPromise;
                 })
