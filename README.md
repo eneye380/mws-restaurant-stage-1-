@@ -43,6 +43,6 @@ To install this project follow the following steps.
 
 5. Ensure you have python version 3 installed and run the command `python -m http.server 8080`. If you don't have Python installed, navigate to Python's [website](https://www.python.org/) to download and install the software.
 
-4. In a browser (preferably Google Chrome) navigate to the [url](http://localhost:8080).
+6. In a browser (preferably Google Chrome) navigate to the [url](http://localhost:8080).
 
-5. At the bottom of the webpage click the install button.
+7. At the bottom of the webpage click the install button.

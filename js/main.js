@@ -232,7 +232,7 @@ createRestaurantHTML = (restaurant) => {
     like.setAttribute("class", "dislike");
     like.setAttribute("style", "background-color: maroon");
   }
-  like.setAttribute("id", "like");
+  //like.setAttribute("id", "like");
   like.setAttribute("name", restaurant.id);
   like.setAttribute("type", "button");
   //like.setAttribute("class", "dislike");
